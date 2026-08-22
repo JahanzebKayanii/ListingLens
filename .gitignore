@@ -1,0 +1,17 @@
+venv/
+__pycache__/
+*.pyc
+.streamlit/
+
+# Raw Kaggle dump (516MB+, exceeds GitHub's file size limit, and datasets
+# don't belong in git history anyway - see README for how to regenerate)
+data/postings.csv
+data/indeed-job-listings.csv
+data/companies/
+data/jobs/
+data/mappings/
+data/*.zip
+
+# Kaggle credentials
+.kaggle/
+kaggle.json
