@@ -2,12 +2,20 @@
 Step 3: train a model that predicts whether a posting will underperform
 its peers, then explain predictions with SHAP.
 
-Target definition: rather than predicting raw view counts (noisy - depends
-heavily on how long a posting has been live, how popular the industry is,
-etc.), we predict RELATIVE underperformance - is this posting in the bottom
-25% of views *within its own industry + experience-level peer group*. That
-controls for the biggest confounders and keeps the target meaningful across
-very different kinds of roles.
+Target definition: raw view counts turned out to be a poor target - views
+happen when LinkedIn surfaces a posting in a feed/search, *before* anyone
+has read the description, so text-quality features (readability, bias
+language, clarity) have no causal path to influence them. Checking
+correlations confirmed this: skill_count/description_length/bias signals
+were all near-zero correlated with views.
+
+Application CONVERSION RATE (applies / views) is the better target -
+applying requires actually reading the posting first, so text quality can
+plausibly drive it. Correlation checks confirmed a real signal here (e.g.
+description_length: -0.18, masculine-coded language: -0.10), so we predict
+RELATIVE underperformance on conversion rate - bottom 25% of apply_rate
+*within the posting's industry + experience-level peer group*, which
+controls for baseline differences in how competitive different roles are.
 """
 
 import json
@@ -30,10 +38,10 @@ FEATURE_COLS = [
 
 
 def make_target(df):
-    group_medians = df.groupby(["industry_name", "formatted_experience_level"])["views"].transform(
+    group_thresholds = df.groupby(["industry_name", "formatted_experience_level"])["apply_rate"].transform(
         lambda s: s.quantile(0.25)
     )
-    return (df["views"] < group_medians).astype(int)
+    return (df["apply_rate"] < group_thresholds).astype(int)
 
 
 def encode_categoricals(df):
@@ -52,12 +60,17 @@ def encode_categoricals(df):
 
 def main():
     df = pd.read_csv(FEATURES_PATH)
-    df = df.dropna(subset=["views"])
+    # need real views AND applies to compute a conversion rate
+    df = df.dropna(subset=["views", "applies"])
+    df = df[df["views"] > 0]
+    df["apply_rate"] = df["applies"] / df["views"]
     df["has_salary"] = df["has_salary"].astype(int)
     df["remote_allowed"] = df["remote_allowed"].fillna(0).astype(int)
 
     df, encoders = encode_categoricals(df)
     df["target"] = make_target(df)
+    print(f"Training rows (have both views and applies): {len(df):,}")
+    print(f"Target balance:\n{df['target'].value_counts(normalize=True)}\n")
 
     X = df[FEATURE_COLS]
     y = df["target"]
@@ -66,10 +79,14 @@ def main():
         X, y, test_size=0.2, random_state=42, stratify=y
     )
 
+    # class imbalance (~75/25) plus modest feature signal means an
+    # unweighted model just predicts the majority class every time -
+    # scale_pos_weight makes it actually discriminate
+    scale_pos_weight = (y_train == 0).sum() / (y_train == 1).sum()
     model = xgb.XGBClassifier(
-        n_estimators=200, max_depth=4, learning_rate=0.05,
+        n_estimators=200, max_depth=3, learning_rate=0.05,
         subsample=0.8, colsample_bytree=0.8, eval_metric="auc",
-        random_state=42,
+        scale_pos_weight=scale_pos_weight, random_state=42,
     )
     model.fit(X_train, y_train)
 
