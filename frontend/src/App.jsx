@@ -67,7 +67,10 @@ export default function App() {
   return (
     <div className="app-shell">
       <header>
-        <h1>🔍 ListingLens</h1>
+        <div className="brand">
+          <span className="brand-mark">🔍</span>
+          <h1>ListingLens</h1>
+        </div>
         <p>Paste a job posting and see how it will actually land with candidates.</p>
       </header>
 

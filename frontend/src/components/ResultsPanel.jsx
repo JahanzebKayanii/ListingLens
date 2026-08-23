@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell, ResponsiveContainer,
 } from "recharts";
@@ -12,8 +12,26 @@ const METRIC_LABELS = {
   description_length: "Word count",
 };
 
+const CHART_THEME = {
+  light: { grid: "#e4e1d9", tick: "#6f6b62", tooltipBg: "#ffffff", tooltipBorder: "#e4e1d9", danger: "#c4453a", good: "#2f8a5a" },
+  dark: { grid: "#33373f", tick: "#a6a29a", tooltipBg: "#1c1f24", tooltipBorder: "#33373f", danger: "#ef6a5f", good: "#4bc582" },
+};
+
+function useColorScheme() {
+  const query = "(prefers-color-scheme: dark)";
+  const [isDark, setIsDark] = useState(() => window.matchMedia(query).matches);
+  useEffect(() => {
+    const mql = window.matchMedia(query);
+    const listener = (e) => setIsDark(e.matches);
+    mql.addEventListener("change", listener);
+    return () => mql.removeEventListener("change", listener);
+  }, []);
+  return isDark ? "dark" : "light";
+}
+
 export default function ResultsPanel({ result }) {
   const [tab, setTab] = useState(TABS[0]);
+  const theme = CHART_THEME[useColorScheme()];
 
   const summaryMetrics = [
     { label: "Skills detected", value: result.skills.length },
@@ -65,13 +83,16 @@ export default function ResultsPanel({ result }) {
             </p>
             <ResponsiveContainer width="100%" height={380}>
               <BarChart data={chartData} layout="vertical" margin={{ left: 40 }}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis type="number" />
-                <YAxis type="category" dataKey="feature" width={140} />
-                <Tooltip />
-                <Bar dataKey="impact">
+                <CartesianGrid strokeDasharray="3 3" stroke={theme.grid} />
+                <XAxis type="number" tick={{ fill: theme.tick, fontSize: 12 }} stroke={theme.grid} />
+                <YAxis type="category" dataKey="feature" width={140} tick={{ fill: theme.tick, fontSize: 12 }} stroke={theme.grid} />
+                <Tooltip
+                  contentStyle={{ background: theme.tooltipBg, border: `1px solid ${theme.tooltipBorder}`, borderRadius: 8, fontSize: 13 }}
+                  labelStyle={{ color: theme.tick }}
+                />
+                <Bar dataKey="impact" radius={[3, 3, 3, 3]}>
                   {chartData.map((entry, i) => (
-                    <Cell key={i} fill={entry.impact > 0 ? "#d62728" : "#2ca02c"} />
+                    <Cell key={i} fill={entry.impact > 0 ? theme.danger : theme.good} />
                   ))}
                 </Bar>
               </BarChart>
@@ -80,14 +101,16 @@ export default function ResultsPanel({ result }) {
         )}
 
         {tab === "Bias language" && (
-          <div className="bias-tab">
-            <div className="bias-col">
-              <strong>Masculine-coded words found</strong>
-              <p>{result.bias.masculine_hits.join(", ") || "None"}</p>
-            </div>
-            <div className="bias-col">
-              <strong>Feminine-coded words found</strong>
-              <p>{result.bias.feminine_hits.join(", ") || "None"}</p>
+          <div>
+            <div className="bias-tab">
+              <div className="bias-col">
+                <strong>Masculine-coded words found</strong>
+                <p>{result.bias.masculine_hits.join(", ") || "None"}</p>
+              </div>
+              <div className="bias-col">
+                <strong>Feminine-coded words found</strong>
+                <p>{result.bias.feminine_hits.join(", ") || "None"}</p>
+              </div>
             </div>
             <p className="hint">
               Based on research showing agentic/masculine-coded language in job posts
