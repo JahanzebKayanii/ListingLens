@@ -56,14 +56,26 @@ python -m spacy download en_core_web_sm
 
 ## Running
 
-Streamlit version (quick, self-contained):
-```
-streamlit run src/app.py
-```
+Two ways to run this - pick one.
 
-API backend (for the React frontend - see `frontend/`):
+**Streamlit** (quick, self-contained, one process):
 ```
 cd src
-uvicorn api:app --reload --port 8000
+streamlit run app.py
 ```
-Interactive API docs at `http://localhost:8000/docs` once running.
+
+**FastAPI + React** (the "proper" full-stack version - separate backend/frontend):
+```
+# terminal 1 - backend
+cd src
+uvicorn api:app --reload --port 8000
+
+# terminal 2 - frontend
+cd frontend
+npm install
+npm run dev
+```
+Then open `http://localhost:5173`. Interactive API docs at `http://localhost:8000/docs`.
+
+Both versions share the same underlying logic (`features.py`, `benchmark.py`,
+the trained model) - they're just two different UIs on top of it.
