@@ -12,6 +12,11 @@ data/jobs/
 data/mappings/
 data/*.zip
 
+# Derived/intermediate datasets - regeneratable via prepare_data.py and
+# build_features.py, and postings_features.csv alone is ~100MB
+data/postings_clean.csv
+data/postings_features.csv
+
 # Kaggle credentials
 .kaggle/
 kaggle.json

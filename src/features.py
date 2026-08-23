@@ -10,7 +10,7 @@ import spacy
 import textstat
 from spacy.matcher import PhraseMatcher
 
-nlp = spacy.load("en_core_web_sm", disable=["parser", "ner", "lemmatizer"])
+nlp = spacy.load("en_core_web_sm", disable=["parser", "ner", "lemmatizer", "tagger"])
 
 # A curated skills taxonomy covering common technical + business/soft skills
 # seen across tech, data, and business-function job postings. Not exhaustive -
@@ -45,6 +45,21 @@ def extract_skills(text):
     matches = _matcher(doc)
     found = {doc[start:end].text.lower() for _, start, end in matches}
     return sorted(found)
+
+
+def extract_skills_batch(texts, batch_size=200):
+    """
+    Same as extract_skills but processes many texts through spaCy's
+    pipe() batching instead of one nlp() call per text - much faster for
+    bulk jobs (building the training set) than calling extract_skills in
+    a loop.
+    """
+    results = []
+    for doc in nlp.pipe(texts, batch_size=batch_size):
+        matches = _matcher(doc)
+        found = {doc[start:end].text.lower() for _, start, end in matches}
+        results.append(sorted(found))
+    return results
 
 
 def readability_grade(text):
