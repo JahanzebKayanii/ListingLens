@@ -84,7 +84,7 @@ with col_right:
     salary_input = st.number_input("Salary (0 if not listing one)", min_value=0, value=0, step=1000)
     pay_period_input = st.selectbox("Pay period", ["Yearly", "Hourly", "Monthly"])
 
-analyze = st.button("Analyze posting", type="primary", use_container_width=True)
+analyze = st.button("Analyze posting", type="primary", width="stretch")
 
 if analyze and posting_text.strip():
     skills = extract_skills(posting_text)
@@ -128,7 +128,8 @@ if analyze and posting_text.strip():
 
         st.metric("Underperformance risk", f"{risk*100:.0f}%",
                   help="Modeled probability this posting lands in the bottom 25% of "
-                       "views for its industry/experience peer group")
+                       "application conversion rate (applies/views) for its industry/"
+                       "experience peer group")
 
         explainer = shap.TreeExplainer(model)
         shap_vals = explainer.shap_values(X)[0]
@@ -140,7 +141,7 @@ if analyze and posting_text.strip():
         ))
         fig.update_layout(title="What's driving this prediction (red = raises risk, green = lowers it)",
                            height=400)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     with tab_bias:
         b1, b2 = st.columns(2)
