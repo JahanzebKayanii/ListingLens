@@ -56,6 +56,14 @@ python -m spacy download en_core_web_sm
 
 ## Running
 
+Streamlit version (quick, self-contained):
 ```
 streamlit run src/app.py
 ```
+
+API backend (for the React frontend - see `frontend/`):
+```
+cd src
+uvicorn api:app --reload --port 8000
+```
+Interactive API docs at `http://localhost:8000/docs` once running.

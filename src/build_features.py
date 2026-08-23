@@ -18,6 +18,12 @@ OUT_PATH = "../data/postings_features.csv"
 MAX_CHARS = 4000
 
 
+# A handful of listings have implausible salary entries (likely hourly
+# rates miscoded as yearly, or scraping errors) - e.g. $135M/year. Treat
+# anything above this as bad data rather than a real high salary.
+MAX_PLAUSIBLE_SALARY = 500_000
+
+
 def salary_midpoint(row):
     if pd.notna(row["med_salary"]):
         val = row["med_salary"]
@@ -29,10 +35,10 @@ def salary_midpoint(row):
         return None
     period = row.get("pay_period")
     if period == "HOURLY":
-        return val * 2080
-    if period == "MONTHLY":
-        return val * 12
-    return val
+        val = val * 2080
+    elif period == "MONTHLY":
+        val = val * 12
+    return val if val <= MAX_PLAUSIBLE_SALARY else None
 
 
 def main():
